@@ -14,23 +14,14 @@ object quasiquotes {
       import c.universe._
 
       val parts = c.prefix.tree match {
-	case Select(qq, _) => qq match {
-	  case Apply(_, qqargs) => qqargs match {
-	    case List(stringctx) => stringctx match {
-	      case Apply(_, args) =>
-		args.map(_ match {
-		  case Literal(l) => l match {
-		    case Constant(s: String) => s
-		  }
-		})	    
-	    }
-	  }
-	}
+	case Select(Apply(_, List(Apply(_, args))), _) =>
+	  args.map(_ match { case Literal(Constant(s: String)) => s })
       }
+      
       require(parts.length == 1)
-      val tree = c.parse(parts(0))
-      val universeTree = reify(scala.reflect.runtime.universe).tree
-      val mirrorTree = reify(scala.reflect.runtime.universe.rootMirror).tree
+      println(c.parse(parts(0)))
+      //val universeTree = treeBuild.mkRuntimeUniverseRef
+      //val mirrorTree = treeBuild.mkAttributedSelect(universeTree, universeTree.tpe.member("rootMirror": TermName))
       //c.Expr(c.reifyTree(universeTree, mirrorTree, tree))
       reify(null)
     }
