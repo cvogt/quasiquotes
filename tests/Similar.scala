@@ -8,7 +8,7 @@ trait Similar {
       if(!similar(tree1, tree2)) {
         println(s"FAIL:\t${showRaw(tree1)}\n\t=/=\n\t${showRaw(tree2)}")
       } else {
-        println("SUCC")
+        println("OK")
       }
     }
   }
