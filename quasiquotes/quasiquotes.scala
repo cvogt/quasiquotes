@@ -55,9 +55,7 @@ private abstract class Impl {
 
   def reifyTree(tree: Tree): Tree = tree match {
     case Ident(name) if subsmap.contains(name.encoded) =>
-      val expr = subsmap(name.encoded)
-      //println(s"${showRaw(expr)}::${showRaw(expr.actualType)}")
-      expr.tree
+      subsmap(name.encoded).tree
     case EmptyTree =>
       reifyMirrorObject(EmptyTree)
     case Literal(const @ Constant(_)) =>
@@ -85,12 +83,16 @@ private abstract class Impl {
     mirrorFactoryCall("Modifiers", mirrorBuildCall("flagsFromBits", reifyAny(m.flags)), reifyAny(m.privateWithin), reifyAny(m.annotations))
 
   def reifyName(name: Name) = {
-    val factory =
-      if (name.isTypeName)
-        "newTypeName"
-      else
-        "newTermName"
-    mirrorCall(factory, Literal(Constant(name.toString)))
+    if(!subsmap.contains(name.decoded)) {
+      val factory =
+        if (name.isTypeName)
+          "newTypeName"
+        else
+          "newTermName"
+      mirrorCall(factory, Literal(Constant(name.toString)))
+    } else {
+      subsmap(name.decoded).tree
+    }
   }
 
   def reifyList(xs: List[Any]): Tree =
