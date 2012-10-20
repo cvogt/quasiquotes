@@ -32,9 +32,15 @@ object Tests extends App with Similar {
     q"{ class x { $y } }"
   }
 
-  val setx = reify { val x = 1 }.tree
+  val valx = reify { val x = 1 }.tree
+  valx ≈ {
+    val xtermname = newTermName("x")
+    q"{ val $xtermname = 1 }"
+  }
+
+  val setx = { var x = 1; reify { x = 1 }.tree }
   setx ≈ {
-    val xterm = newTermName("x")
-    q"{ val $xterm = 1 }"
+    val xtermname = newTermName("x")
+    q"{ $xtermname = 1 }"
   }
 }
