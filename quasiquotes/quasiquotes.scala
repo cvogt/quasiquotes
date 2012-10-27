@@ -21,11 +21,20 @@ private object StaticImpl {
 }
 
 private abstract class Impl {
-  val qqprefix = "$quasiquote$"
-  val qquniverse = "u"
+
   val ctx: macros.Context
   val args: Seq[ctx.Expr[Any]]
   import ctx.universe._
+
+  val termNameType = typeOf[scala.reflect.runtime.universe.TermName]
+  val typeNameType = typeOf[scala.reflect.runtime.universe.TypeName]
+  val treeType = typeOf[scala.reflect.runtime.universe.Tree]
+
+  val qqprefix = "$quasiquote$"
+  val qquniverse = "scala.reflect.runtime.universe"
+
+  // TODO: check incoming data
+  // TODO: which trees are special-cased?
 
   val parts =
     ctx.prefix.tree match {
@@ -54,8 +63,10 @@ private abstract class Impl {
   println()*/
 
   def reifyTree(tree: Tree): Tree = tree match {
-    case Ident(name) if subsmap.contains(name.encoded) =>
+    case Ident(name) if subsmap.contains(name.encoded) && subsmap(name.encoded).actualType <:< treeType =>
       subsmap(name.encoded).tree
+    //case emptyValDef =>
+    //  mirrorBuildSelect("emptyValDef")
     case EmptyTree =>
       reifyMirrorObject(EmptyTree)
     case Literal(const @ Constant(_)) =>
@@ -130,23 +141,20 @@ private abstract class Impl {
   def scalaFactoryCall(name: String, args: Tree*): Tree =
     call(s"scala.$name.apply", args: _*)
 
-  def mirrorCall(name: TermName, args: Tree*): Tree =
-    call(s"${qquniverse}.${name.toString}", args: _*)
-
   def mirrorCall(name: String, args: Tree*): Tree =
     call(s"${qquniverse}.$name", args: _*)
 
   def mirrorSelect(name: String): Tree =
     termPath(s"${qquniverse}.$name")
 
+  def mirrorBuildSelect(name: String): Tree =
+    termPath(s"$qquniverse.build.$name")
+
   def mirrorFactoryCall(value: Product, args: Tree*): Tree =
     mirrorFactoryCall(value.productPrefix, args: _*)
 
   def mirrorFactoryCall(prefix: String, args: Tree*): Tree =
     mirrorCall(prefix, args: _*)
-
-  def mirrorBuildCall(name: TermName, args: Tree*): Tree =
-    call(s"${qquniverse}.build.$name", args: _*)
 
   def mirrorBuildCall(name: String, args: Tree*): Tree =
     call(s"${qquniverse}.build.$name", args: _*)
