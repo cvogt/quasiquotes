@@ -6,16 +6,26 @@ import quasiquotes._
 
 class Tests extends FunSuite with Similar {
 
-  test("tree insertion") {
-    val xplusy = { val x = 1; val y = 2; reify(x + y).tree }
+  val xplusy = { val x = 1; val y = 2; reify(x + y) }.tree
+  val classxy = reify { class x { def y = null } }.tree
+
+  test("without arguments") {
     assert(xplusy ≈ {
       q"x + y"
     })
+    assert(classxy ≈ {
+      q"{ class x { def y = null } }"
+    })
+  }
+
+  test("insert tree by itself") {
     assert(xplusy ≈ {
       val sum = q"x + y"
       q"$sum"
     })
+  }
 
+  test("insert trees into if expression") {
     assert({
       val x = 1
       val y = 2
@@ -26,33 +36,32 @@ class Tests extends FunSuite with Similar {
       val xgty = q"x > y"
       q"if($xgty) $xminusy else $xplusy"
     })
+  }
 
-    val classxy = reify { class x { def y = null } }.tree
-    assert(classxy ≈ {
-      q"{ class x { def y = null } }"
-    })
+  test("insert method") {
     assert(classxy ≈ {
       val y = q"def y = null"
       q"{ class x { $y } }"
-
     })
   }
 
-  test("term name insertion") {
+  test("insert term name into val") {
     assert({
       reify { val x = 1 }.tree
     } ≈ {
       val xtermname = newTermName("x")
       q"{ val $xtermname = 1 }"
     })
+  }
 
+  test("insert term name into assign") {
     assert(Assign(Ident(newTermName("x")), Literal(Constant(1))) ≈ {
       val xtermname = newTermName("x")
       q"{ $xtermname = 1 }"
     })
   }
 
-  test("type name insertion") {
+  test("insert type name into class") {
     assert({
       reify { class x }.tree
     } ≈ {
