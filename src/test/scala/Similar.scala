@@ -4,7 +4,11 @@ import u._
 trait Similar {
 
   implicit class TestSimilar(tree1: Tree) {
-    def ≈(tree2: Tree) = similar(tree1, tree2)
+    def ≈(tree2: Tree) =
+      if(!similar(tree1, tree2))
+        Some(showRaw(tree1) + "\n=/=\n" + showRaw(tree2))
+      else
+        None
   }
 
   def similar(const1: Constant, const2: Constant) = const1.value == const2.value
