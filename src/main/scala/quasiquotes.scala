@@ -1,20 +1,23 @@
 import scala.language.experimental.{macros => macrosFeature}
+import scala.reflect.{api => reflect}
 import scala.reflect.macros
 import scala.collection.mutable
 
 object quasiquotes {
   implicit class QuasiQuote(ctx: StringContext) {
     object q {
-      def apply(args0: Any*) = macro StaticImpl.apply
+      def apply(args0: Any*)(implicit universe0: reflect.Universe) =
+        macro StaticImpl.apply
     }
   }
 }
 
 private object StaticImpl {
-  def apply(c: macros.Context)(args0: c.Expr[Any]*): c.Expr[Any] = {
+  def apply(c: macros.Context)(args0: c.Expr[Any]*)(universe0: c.Expr[reflect.Universe]): c.Expr[Any] = {
     val impl = new {
       val ctx: c.type = c
       val args = args0
+      val universe = universe0
     } with Impl
     c.Expr(impl.result)
   }
@@ -24,6 +27,7 @@ private abstract class Impl {
 
   val ctx: macros.Context
   val args: Seq[ctx.Expr[Any]]
+  val universe: ctx.Expr[reflect.Universe]
   import ctx.universe._
 
   val termNameType = typeOf[scala.reflect.runtime.universe.TermName]

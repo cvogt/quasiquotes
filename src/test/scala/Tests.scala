@@ -1,10 +1,10 @@
-import org.scalatest.FunSuite
-
-import scala.reflect.runtime.{universe => u}
-import u._
+import scala.reflect.runtime.{universe => ru}
 import quasiquotes._
 
-class Tests extends FunSuite with Similar {
+class BasicTests extends QQSuite {
+
+  implicit val universe = ru
+  import ru._
 
   val xplusy = { val x = 1; val y = 2; reify(x + y) }.tree
   val classxy = reify { class x { def y = null } }.tree
@@ -69,4 +69,15 @@ class Tests extends FunSuite with Similar {
       q"{ class $xname }"
     })
   }
+
+  test("insert type name into typedef") {
+    assert({
+      reify { type T = Int }.tree
+    } ≈ {
+      val tname = newTypeName("T")
+      q"{ type $tname = Int }"
+    })
+  }
 }
+
+class ImplicitUniverseTests extends QQSuite
