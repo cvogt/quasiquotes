@@ -112,8 +112,8 @@ trait QQSuite extends FunSuite {
             apply(el1, el2)
           case (Super(qual1, mix1), Super(qual2, mix2)) =>
             apply(qual1, qual2) && apply(mix1, mix2)
-          case (Template(_, _, body1), Template(_, _, body2)) =>
-            apply(body1, body2)
+          case (Template(parents1, self1, body1), Template(parents2, self2, body2)) =>
+            apply(parents1, parents2) && apply(self1, self2) && apply(body1, body2)
           case (This(qual1), This(qual2)) =>
             apply(qual1, qual2)
           case (Throw(expr1), Throw(expr2)) =>
@@ -124,11 +124,14 @@ trait QQSuite extends FunSuite {
             apply(fun1, fun2) && apply(args1, args2)
           case (TypeBoundsTree(lo1, hi1), TypeBoundsTree(lo2, hi2)) =>
             apply(lo1, lo2) && apply(hi1, hi2)
+          case (TypeDef(mods1, name1, tparams1, rhs1), TypeDef(mods2, name2, tparams2, rhs2)) =>
+            apply(mods1, mods2) && apply(name1, name2) &&
+            apply(tparams1, tparams2) && apply(rhs1, rhs2)
           case (TypeTree(), TypeTree()) => true
           case (EmptyTree, EmptyTree) => true
           case _ => false
         }
-        //if(!res) println(showRaw(t1) + "=/=" + showRaw(t2))
+        //if(!res) println("---\n" + showRaw(t1) + "\n=/=\n" + showRaw(t2) )
         res
       }
     }

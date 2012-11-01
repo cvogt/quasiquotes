@@ -7,14 +7,14 @@ class BasicTests extends QQSuite {
   import ru._
 
   val xplusy = { val x = 1; val y = 2; reify(x + y) }.tree
-  val classxy = reify { class x { def y = null } }.tree
+  val classxy = reify { class x extends AnyRef { def y = null } }.tree
 
   test("without arguments") {
     assert(xplusy ≈ {
       q"x + y"
     })
     assert(classxy ≈ {
-      q"{ class x { def y = null } }"
+      q"{ class x extends AnyRef { def y = null } }"
     })
   }
 
@@ -41,7 +41,7 @@ class BasicTests extends QQSuite {
   test("insert method") {
     assert(classxy ≈ {
       val y = q"def y = null"
-      q"{ class x { $y } }"
+      q"{ class x extends AnyRef { $y } }"
     })
   }
 
@@ -63,10 +63,10 @@ class BasicTests extends QQSuite {
 
   test("insert type name into class") {
     assert({
-      reify { class x }.tree
+      reify { class x extends AnyRef }.tree
     } ≈ {
       val xname = newTypeName("x")
-      q"{ class $xname }"
+      q"{ class $xname extends AnyRef }"
     })
   }
 
