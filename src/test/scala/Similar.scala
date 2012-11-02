@@ -131,7 +131,7 @@ trait QQSuite extends FunSuite {
           case (EmptyTree, EmptyTree) => true
           case _ => false
         }
-        //if(!res) println("---\n" + showRaw(t1) + "\n=/=\n" + showRaw(t2) )
+        //if(!res) println("---\n" + showRaw(t1, printIds=true) + "\n=/=\n" + showRaw(t2, printIds=true) )
         res
       }
     }

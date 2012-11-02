@@ -3,6 +3,10 @@ import scala.reflect.{api => reflect}
 import scala.reflect.macros
 import scala.collection.mutable
 
+// TODO: check incoming data
+// TODO: which trees are special-cased?
+
+
 object quasiquotes {
   implicit class QuasiQuote(ctx: StringContext) {
     object q {
@@ -30,15 +34,24 @@ private abstract class Impl {
   val universe: ctx.Expr[reflect.Universe]
   import ctx.universe._
 
-  val termNameType = typeOf[scala.reflect.runtime.universe.TermName]
-  val typeNameType = typeOf[scala.reflect.runtime.universe.TypeName]
-  val treeType = typeOf[scala.reflect.runtime.universe.Tree]
+  def memberType(thistype: Type, name: String): Type = {
+    val sym = thistype.typeSymbol.typeSignature.member(newTypeName(name))
+    sym.asType.toType.typeConstructor.asSeenFrom(thistype, sym.owner)
+  }
+
+  val universeType = universe.actualType
+
+  val termNameType = memberType(universeType, "TermName")
+  val typeNameType = memberType(universeType, "TypeName")
+  val treeType = memberType(universeType, "Tree")
+  /*println("--- Universe Types")
+  println(showRaw(termNameType, printIds=true))
+  println(showRaw(typeNameType, printIds=true))
+  println(showRaw(treeType, printIds=true))*/
 
   val qqprefix = "$quasiquote$"
-  val qquniverse = "scala.reflect.runtime.universe"
-
-  // TODO: check incoming data
-  // TODO: which trees are special-cased?
+  val qquniverse = "$u"
+  val qqmirror = "$m"
 
   val parts =
     ctx.prefix.tree match {
@@ -46,6 +59,7 @@ private abstract class Impl {
         args.map(_ match { case Literal(Constant(s: String)) => s })
     }
 
+  //println("\n--- Parts Types")
   val (code, subsmap) = {
     val sb = new StringBuilder(parts.head)
     val subsmap = mutable.Map[String, Expr[Any]]()
@@ -54,17 +68,34 @@ private abstract class Impl {
       sb.append(placeholder)
       sb.append(part)
       subsmap(placeholder) = arg
+      //println(s"$placeholder -> ${showRaw(arg)} :: ${showRaw(arg.actualType, printIds=true)}")
     }
     (sb.toString, subsmap)
   }
 
   val tree = ctx.parse(code)
-  val result = reifyTree(tree)
+  val reified = reifyTree(tree)
+  val result = wrap(reified)
 
-  /*println(s"raw tree = ${showRaw(tree)}")
+  /*println()
+  println("parsed code")
+  println(s"= ${tree}")
+  println(s"= ${showRaw(tree)}")
   println()
-  println(s"raw reifiedtree = ${showRaw(result)}")
+  println("reifiedtree")
+  println(s"= ${reified}")
+  println(s"= ${showRaw(reified)}")
+  println()
+  println("result")
+  println(s"= ${result}")
+  println(s"= ${showRaw(result)}")
   println()*/
+
+  def wrap(t: Tree) = {
+    Block(
+      List(ValDef(Modifiers(), newTermName(qquniverse), TypeTree(), universe.tree)),
+      t)
+  }
 
   def reifyTree(tree: Tree): Tree = tree match {
     case Ident(name) if subsmap.contains(name.encoded) && subsmap(name.encoded).actualType <:< treeType =>
@@ -146,10 +177,10 @@ private abstract class Impl {
     call(s"scala.$name.apply", args: _*)
 
   def mirrorCall(name: String, args: Tree*): Tree =
-    call(s"${qquniverse}.$name", args: _*)
+    call(s"$qquniverse.$name", args: _*)
 
   def mirrorSelect(name: String): Tree =
-    termPath(s"${qquniverse}.$name")
+    termPath(s"$qquniverse.$name")
 
   def mirrorBuildSelect(name: String): Tree =
     termPath(s"$qquniverse.build.$name")
@@ -161,7 +192,7 @@ private abstract class Impl {
     mirrorCall(prefix, args: _*)
 
   def mirrorBuildCall(name: String, args: Tree*): Tree =
-    call(s"${qquniverse}.build.$name", args: _*)
+    call(s"$qquniverse.build.$name", args: _*)
 
   def mkList(args: List[Tree]): Tree =
     scalaFactoryCall("collection.immutable.List", args: _*)

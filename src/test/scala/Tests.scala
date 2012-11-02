@@ -3,7 +3,7 @@ import quasiquotes._
 
 class BasicTests extends QQSuite {
 
-  implicit val universe = ru
+  implicit val universe: ru.type = ru
   import ru._
 
   val xplusy = { val x = 1; val y = 2; reify(x + y) }.tree
@@ -20,6 +20,7 @@ class BasicTests extends QQSuite {
 
   test("insert tree by itself") {
     assert(xplusy ≈ {
+      val $u = ru
       val sum = q"x + y"
       q"$sum"
     })
@@ -79,5 +80,3 @@ class BasicTests extends QQSuite {
     })
   }
 }
-
-class ImplicitUniverseTests extends QQSuite
